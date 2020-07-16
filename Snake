@@ -1,0 +1,183 @@
+#include <stdio.h>
+#include <graphics.h>
+#include <mmsystem.h>
+#include <Windows.h>
+#include <conio.h>
+#include <time.h>
+#include <stdlib.h>
+#define NUM 200
+#define SIZE 10
+#pragma comment(lib,"winmm.lib")
+
+enum  Ch{up=72,down=80,left=75,right=77};
+struct Body {
+	int x;
+	int y;
+};
+struct Snake {
+	int length;
+	Ch dire;
+	Body szb[NUM];
+};
+struct Food {
+	int x;
+	int y;
+	bool iseat;
+};
+
+Snake snake;
+Food food;
+int speed=10;
+int realspeed = 200;
+int n=0;
+
+void GameInit() {
+	snake.length = 2;
+	snake.dire = right;
+	snake.szb[0].x = 100;
+	snake.szb[0].y = 100;
+	snake.szb[1].x = 90;
+	snake.szb[1].y = 100;
+
+	food.iseat = true;
+}	
+
+void Draw() {
+	cleardevice();
+	setfillcolor(RED);
+	fillrectangle(snake.szb[0].x, snake.szb[0].y, snake.szb[0].x + SIZE, snake.szb[0].y + SIZE);
+	for (int i = 0; i < snake.length; i++)
+	{
+		rectangle(snake.szb[i].x, snake.szb[i].y, snake.szb[i].x + SIZE, snake.szb[i].y + SIZE);
+	}
+	setfillcolor(GREEN);
+	fillroundrect(food.x, food.y, food.x + 10, food.y + 10, 10, 10);
+}
+
+
+void SnakeMove() {
+
+	for (int i = snake.length-1; i > 0; i--)
+	{
+		snake.szb[i].x = snake.szb[i - 1].x;
+		snake.szb[i].y = snake.szb[i - 1].y;
+	}
+
+	switch (snake.dire)
+	{
+	case up:
+		snake.szb[0].y -= speed;
+		break;
+	case down:
+		snake.szb[0].y += speed;
+		break;
+	case left:
+		snake.szb[0].x -= speed;
+		break;
+	case right:
+		snake.szb[0].x += speed;
+		break;
+	}
+}
+
+void ChangeDir() {
+	char key=_getch();
+	switch (key)
+	{
+	case up:
+		if (snake.dire!=down)
+		{
+			snake.dire = up;
+		}
+		break;
+	case down:
+		if (snake.dire != up)
+		{
+			snake.dire = down;
+		}
+		break;
+	case left:
+		if (snake.dire != right)
+		{
+			snake.dire = left;
+		}
+		break;
+	case right:
+		if (snake.dire != left)
+		{
+			snake.dire = right;
+		}
+		break;
+	}
+}
+
+
+void FoodGenerate() {
+	bool flag = false;
+	if (food.iseat==true)
+	{
+		while (1)
+		{
+			flag = false;
+			food.x = rand() % 64 * 10;
+			food.y = rand() % 48 * 10;
+
+			for (int i = 0; i < snake.length; i++)
+			{
+				if (food.x == snake.szb[i].x && food.y == snake.szb[i].y)
+				{
+					flag = true;
+					break;
+				}
+			}
+			if (!flag) break;
+		}
+	}
+	food.iseat = false;
+}
+
+void EatFood() {
+	if (snake.szb[0].x==food.x&&snake.szb[0].y==food.y)
+	{
+		food.iseat = true;
+		snake.length++;
+	}
+}
+
+int GameOver() {
+	if (snake.szb[0].x<0||snake.szb[0].x>640||snake.szb[0].y<0||snake.szb[0].y>480)
+	{
+		return 1;
+	}
+	for (int i = 1; i < snake.length; i++)
+	{
+		if (snake.szb[0].x==snake.szb[i].x&&snake.szb[0].y==snake.szb[i].y)
+		{
+			return 1;
+		}
+	}
+	return 2;
+}
+
+int main() {
+	initgraph(640, 480);
+
+	mciSendString(L"open bgm.mp3", 0, 0, 0);
+	mciSendString(L"play bgm.mp3", 0, 0, 0);
+
+	srand((unsigned int)time(NULL));
+	GameInit();
+	while (1) {
+		while (!_kbhit())
+		{
+			FoodGenerate();
+			SnakeMove();
+			Draw();
+			EatFood();
+			Sleep(realspeed);
+			if (GameOver() == 1) closegraph();
+		}
+		ChangeDir();
+	}
+	return 0;
+}
