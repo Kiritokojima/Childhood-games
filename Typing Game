@@ -1,0 +1,134 @@
+#include <graphics.h>
+#include <stdio.h>
+#include <time.h>
+#include <stdlib.h>
+#include <conio.h>
+#include <iostream>
+#include <math.h>
+#include <mmsystem.h>
+#include <Windows.h>
+#pragma comment(lib,"winmm.lib")
+#define NUM 20
+using namespace std;
+
+
+typedef struct Letter {
+	int x;
+	int y;
+	char ob;
+	int flag;
+}Letter;
+
+Letter letter[NUM];
+IMAGE cake, bg;
+int speed = 2, num = 1500;
+
+void GameInit() {
+	setbkmode(0);
+	settextstyle(30, 0, L"宋体");
+	settextcolor(0);
+	loadimage(&bg, L"./res/bg.jpg", 720, 640);
+	loadimage(&cake, L"./res/cake.jpg", 40, 40);
+	for (int i = 0; i < NUM; i++) {
+		letter[i].flag = 0;
+	}
+}
+
+void AddLetter() {
+	for (int i = 0; i < NUM; i++)
+	{
+		if (letter[i].flag == 0)
+		{
+			letter[i].x = rand() % 710;
+			letter[i].y = 0;
+			letter[i].ob = rand() % 26 + 65;
+			letter[i].flag = 1;
+			break;
+		}
+	}
+}
+
+void LetterShow() {
+	BeginBatchDraw();
+	cleardevice();
+	putimage(0, 0, &bg);
+	for (int i = 0; i < NUM; i++)
+	{
+		if (letter[i].flag == 1)
+		{
+			putimage(letter[i].x - 13, letter[i].y - 5, &cake, SRCPAINT);
+			putimage(letter[i].x - 13, letter[i].y - 5, &cake, SRCAND);
+			outtextxy(letter[i].x, letter[i].y, letter[i].ob);
+		}
+	}
+	EndBatchDraw();
+}
+
+void MoveLetter() {
+	for (int i = 0; i < NUM; i++) {
+		if (letter[i].flag == 1)
+		{
+			letter[i].y += speed;
+			if (letter[i].y >= 640)
+			{
+				letter[i].flag = 0;
+			}
+		}
+	}
+}
+
+int main() {
+	initgraph(720, 640);
+	srand((unsigned int)time(NULL));
+	mciSendStringA("open 2.mp3", 0, 1, 0);
+	mciSendStringA("play BGM repeat", 0, 0, 0);
+	GameInit();
+	char key;
+
+	DWORD t1, t2, tt1, tt2;
+	tt1 = t1 = GetTickCount();
+
+	while (1) {
+		t2 = GetTickCount();
+		if (t2 - t1 > num)
+		{
+			AddLetter();
+			t1 = t2;
+		}
+		LetterShow();
+		tt2 = GetTickCount();
+		if (tt2 - tt1 > 1)
+		{
+			MoveLetter();
+			tt1 = tt2;
+		}
+
+		if (_kbhit())
+		{
+			key = _getch();
+			int max = 0, per = -1;
+			for (int i = 0; i < NUM; i++) {
+
+				if (key - ('a' - 'A') == letter[i].ob || key == letter[i].ob)
+				{
+					if (letter[i].y > max)
+					{
+						per = i;
+						max = letter[i].y;
+					}
+				}
+				if (key == '1') speed = 1, num = 1500;
+				if (key == '2') speed = 2, num = 1000;
+				if (key == '3') speed = 3, num = 900;
+				if (key == '4') speed = 4, num = 800;
+				if (key == '5') speed = 5, num = 700;
+				if (key == '6') speed = 5, num = 500;
+			}
+			if (per != -1)
+			{
+				letter[per].flag = 0;
+			}
+		}
+	}
+	return 0;
+}
