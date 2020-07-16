@@ -1,0 +1,263 @@
+#include <stdio.h>
+#include <graphics.h>
+#include <math.h>
+#include <time.h>
+#include <mmsystem.h>
+#include <conio.h>
+#pragma comment(lib,"winmm.lib")
+#define BulletNum 5
+#define BalloonNum 7
+
+#pragma region ConstantValue
+//Gun
+int x = 320, y = 390;
+//Bullet
+struct Bullet {
+	double x, y;
+	double vx, vy;
+	int r;
+	int color;
+	int flag;
+}bullet[BulletNum];
+//balloon
+struct Balloon {
+	int x, y;
+	int color;
+	int flag;
+}balloon[BalloonNum];
+//Time
+DWORD t1, t2;
+int score = 0;
+char Showscore[4];
+int speed = 25;
+
+#pragma endregion
+
+void GameDisplay() {
+	BeginBatchDraw();
+#pragma region Gameinterface 
+	//frame
+	setlinestyle(PS_SOLID,1);
+	setlinecolor(WHITE);		
+	
+	setfillcolor(RGB(177, 173, 175));
+	fillrectangle(640, 0, 719, 479);	
+	setfillcolor(RGB(149, 206, 245));
+	fillrectangle(0, 0, 641, 479);
+	
+	//circle and gun
+	circle(320, 460, 60);
+	setlinecolor(YELLOW);
+	setfillcolor(YELLOW);
+	fillcircle(320,460,15);
+	
+	setlinestyle(PS_SOLID, 8);;
+	line(x, y, 320, 460);
+
+	//scoreboard
+	setbkmode(0);
+	outtextxy(660,100,"Score:");
+	outtextxy(660, 120, Showscore);
+	outtextxy(660, 300, "Author:");
+	outtextxy(660, 340, "Bamboo");
+	outtextxy(660, 380, "Studio");
+
+	//balloon
+	setlinecolor(WHITE);
+	setlinestyle(PS_SOLID, 1);
+
+	for (int i = 0; i < BalloonNum; i++) {
+		if (balloon[i].flag==1)
+		{
+			setfillcolor(balloon[i].color);
+			fillellipse(balloon[i].x, balloon[i].y, balloon[i].x + 30, balloon[i].y + 50);
+			arc(balloon[i].x + 5, balloon[i].y + 5, balloon[i].x + 25, balloon[i].y + 45, 0, 1.2);
+			arc(balloon[i].x + 15, balloon[i].y + 35, balloon[i].x + 35, balloon[i].y + 65, 3.14, 4.4);	
+		}
+	}
+
+
+	//Draw Bullet
+	for (int i = 0; i < BulletNum; i++) {
+		if (bullet[i].flag==1)
+		{
+			setlinecolor(bullet[i].color);
+			setfillcolor(bullet[i].color);
+			fillcircle(bullet[i].x, bullet[i].y, 5);
+		}
+	}
+
+#pragma endregion 
+	EndBatchDraw();
+}
+
+void GameInit() {
+	for (int i = 0; i < BulletNum; i++) {
+		bullet[i].r = 8;
+		bullet[i].color = RGB(rand() % 256, rand() % 256, rand() % 256);
+		bullet[i].flag = 0;
+	}
+	for (int i = 0; i < BalloonNum; i++)
+	{
+		if (i<5)
+		{
+			balloon[i].x = rand() % 610;
+			balloon[i].y = rand() % 400;
+			balloon[i].color = RGB(rand() % 256, rand() % 256, rand() % 256);
+			balloon[i].flag = 1;
+		}
+		else {
+			balloon[i].color = RGB(rand() % 256, rand() % 256, rand() % 256);
+			balloon[i].flag = 0;
+		}
+	}
+}
+
+void BulletGenerate(double arc) {
+	for (int i = 0; i < BulletNum; i++)
+	{
+		if (bullet[i].flag==0)
+		{
+			bullet[i].x = x;
+			bullet[i].y = y;
+			bullet[i].vx = speed * cos(arc);
+			bullet[i].vy = speed * sin(arc);
+			bullet[i].flag = 1;
+			break;
+		}
+	}
+}
+
+void BalloonGenerate() {
+	for (int i = 0; i < BalloonNum; i++)
+	{
+		if (balloon[i].flag == 0)
+		{
+			balloon[i].x = rand()%610;
+			balloon[i].y = 480;
+			balloon[i].flag = 1;
+			break;
+		}
+	}
+}
+
+void BulletMove() {
+	for (int i = 0; i < BulletNum; i++)
+	{
+		if (bullet[i].flag==1)
+		{
+			bullet[i].x += bullet[i].vx;
+			bullet[i].y -= bullet[i].vy;
+		}
+	}
+	for (int i = 0; i < BulletNum; i++)
+	{
+		if (bullet[i].flag == 1) {
+			if (bullet[i].x<0||bullet[i].x>640||bullet[i].y<0||bullet[i].y>480)
+			{
+				bullet[i].flag = 0;
+			}
+		}
+	}
+}
+
+void BalloonMove() {
+	for (int i = 0; i < BalloonNum; i++)
+	{
+		if (balloon[i].flag==1)
+		{
+			balloon[i].y -= 1.5;
+
+			if (rand()%2==0)
+			{
+				balloon[i].x += 1;
+			}
+			else {
+				balloon[i].x -= 1;
+			}
+		}
+	}
+	for (int i = 0; i < BalloonNum; i++)
+	{
+		if (balloon[i].flag == 1)
+		{
+			if (balloon[i].x+30<0||balloon[i].x>640||balloon[i].y+60<0)
+			{
+				balloon[i].flag = 0;
+			}
+		}
+	}
+}
+
+void Boom() {
+	for (int i = 0; i < BalloonNum; i++)
+	{
+		if (balloon[i].flag==1)
+		{
+			for (int j = 0; j < BulletNum; j++) {
+				if (bullet[j].flag==1)
+				{
+					if (bullet[j].x>balloon[i].x&&bullet[j].x<balloon[i].x+30&&bullet[j].y>balloon[i].y
+						&&bullet[j].y<balloon[i].y+50)
+					{
+						bullet[j].flag = 0;
+						balloon[i].flag = 0;
+						score += 10;
+					}
+				}
+			}	
+		}
+	}
+}
+
+int main() {
+	initgraph(720, 480);
+	srand((unsigned int)time(NULL));
+	mciSendString("opne Taylor.mp3", 0, 0, 0);
+	mciSendString("play Taylor.mp3", 0, 0, 0);
+	GameInit();
+	MOUSEMSG msg = { 0 };
+	double arc;
+	t1 = GetTickCount();
+	while (1) {
+		sprintf_s(Showscore, "%d", score);
+
+		char key;
+		if (_kbhit())
+		{
+			key = _getch();
+			if (key == '1') speed = 25;
+			else if (key == '2') speed = 15;
+			else if (key == '3') speed = 10;
+			else if (key == '4') speed = 5;
+		}
+
+		GameDisplay();
+
+		if (MouseHit())
+		{
+			msg = GetMouseMsg();
+			arc = atan2(460.0 - msg.y, +msg.x - 320.0);
+			x = 320 + 70 * cos(arc);
+			y = 460 - 70 * sin(arc);
+
+			if (msg.uMsg==WM_LBUTTONDOWN)
+			{
+				BulletGenerate(arc);
+			}	
+		}
+
+		BalloonGenerate();
+
+		t2 = GetTickCount();
+		if (t2-t1>20)
+		{
+			BulletMove();
+			BalloonMove();
+			t1 = t2;
+		}
+		Boom();
+	}
+	getchar();
+	return 0;
+}
